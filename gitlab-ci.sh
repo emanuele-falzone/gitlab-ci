@@ -111,8 +111,15 @@ STAGES=($(yq r -j .gitlab-ci.yml \
 
 JOBS=$(yq r -j .gitlab-ci.yml \
         | jq -r 'with_entries(select(.value | objects)) 
-                | with_entries(select(.value.stage | strings))') 
-                
+                | with_entries(select(.value.stage | strings))
+                | with_entries(select(.key | startswith(".")
+                                                   | not ))
+                | with_entries(select((.value.only == null) or
+                                      (.value.only | arrays 
+                                                   | .[] 
+                                                   | contains("tags") 
+                                                   | not)))') 
+
 ################################################################################
 # If job name specified executes it, otherwise execute all jobs
 ################################################################################
