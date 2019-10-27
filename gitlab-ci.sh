@@ -144,7 +144,13 @@ if [ -z "$2" ]; then
         done
     done
 else
-    if [[ " ${JOBS[@]} " =~ " $2 " ]]; then
+    ALL_JOBS=$(yq r -j .gitlab-ci.yml \
+                | jq -r 'with_entries(select(.value | objects)) 
+                        | with_entries(select(.value.stage | strings))
+                        | keys 
+                        | @sh' \
+                | sed "s/\'//g")
+    if [[ " ${ALL_JOBS[@]} " =~ " $2 " ]]; then
         gitlab-runner exec docker $2 \
             --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
             --env CI_COMMIT_SHA=$(git rev-parse HEAD) \
