@@ -90,9 +90,14 @@ VARIABLES_LINK=$(curl --insecure \
                       $HTTP_URL_TO_REPO/api/v4/projects/$PROJECT_NAME \
                 | jq --raw-output '._links.self + "/variables"')
 
-PROJECT_VARIABLES=$(curl --insecure \
+PROJECT_RAW_VARIABLES=$(curl --insecure \
                          -H "Private-Token: ${GITLAB_CI_TOKEN}" \
                          ${VARIABLES_LINK} \
+                   | jq --raw-output)
+
+echo $PROJECT_RAW_VARIABLES | jq 'sort_by(.key) | from_entries'
+
+PROJECT_VARIABLES=$(echo $PROJECT_RAW_VARIABLES \
                    | jq --raw-output 'map("--env " + .key + "=" + .value) 
                                      | join(" ")')
 
