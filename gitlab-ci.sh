@@ -74,8 +74,6 @@ VARIABLES_LINK=$(curl --insecure \
                       $HTTP_URL_TO_REPO/api/v4/projects/$PROJECT_NAME \
                 | jq --raw-output '._links.self + "/variables"')
 
-PROJECT_VARIABLES_LINK="${PROJECT_LINK}/variables"
-
 PROJECT_VARIABLES=$(curl --insecure \
                          -H "Private-Token: ${GITLAB_CI_TOKEN}" \
                          ${VARIABLES_LINK} \
