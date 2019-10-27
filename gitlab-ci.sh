@@ -85,12 +85,12 @@ PROJECT_NAME=$(echo $SSH_URL_TO_REPO \
                     | sed 's/.git//' \
                     | sed 's/\//%2F/')
 
-VARIABLES_LINK=$(curl --insecure \
+VARIABLES_LINK=$(curl --insecure --silent \
                       -H "Private-Token: ${GITLAB_CI_TOKEN}" \
                       $HTTP_URL_TO_REPO/api/v4/projects/$PROJECT_NAME \
                 | jq --raw-output '._links.self + "/variables"')
 
-PROJECT_RAW_VARIABLES=$(curl --insecure \
+PROJECT_RAW_VARIABLES=$(curl --insecure --silent \
                          -H "Private-Token: ${GITLAB_CI_TOKEN}" \
                          ${VARIABLES_LINK} \
                    | jq --raw-output)
