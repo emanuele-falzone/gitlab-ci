@@ -105,24 +105,36 @@ PROJECT_VARIABLES=$(echo $PROJECT_RAW_VARIABLES \
 # Extract list of jobs from .gitlab-ci.yml file
 ################################################################################
 
-JOBS=($(yq r -j .gitlab-ci.yml \
-        | jq -r 'with_entries(select(.value | objects)) 
-                | with_entries(select(.value.stage | strings)) 
-                | keys 
-                | @sh' \
+STAGES=($(yq r -j .gitlab-ci.yml \
+        | jq -r '.stages | @sh' \
         | sed "s/\'//g"))
 
+JOBS=$(yq r -j .gitlab-ci.yml \
+        | jq -r 'with_entries(select(.value | objects)) 
+                | with_entries(select(.value.stage | strings))') 
+                
 ################################################################################
 # If job name specified executes it, otherwise execute all jobs
 ################################################################################
 
 if [ -z "$2" ]; then
-    for JOB in "${JOBS[@]}"
+    for STAGE in "${STAGES[@]}"
     do
-        gitlab-runner exec docker $JOB \
-            --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
-            --env CI_COMMIT_SHA=$(git rev-parse HEAD) \
-            $PROJECT_VARIABLES
+        echo "gitlab-ci ---- Executing STAGE $STAGE"
+        STAGE_JOBS=($(echo $JOBS | jq -r --arg STAGE "$STAGE" '
+                                    with_entries(select(.value.stage == $STAGE))
+                                    | keys 
+                                    | @sh' \
+                                 | sed "s/\'//g"))
+
+        for JOB in "${STAGE_JOBS[@]}"
+        do
+            echo "gitlab-ci ---- Executing JOB $JOB"
+            gitlab-runner exec docker $JOB \
+                --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
+                --env CI_COMMIT_SHA=$(git rev-parse HEAD) \
+                $PROJECT_VARIABLES
+        done
     done
 else
     if [[ " ${JOBS[@]} " =~ " $2 " ]]; then
