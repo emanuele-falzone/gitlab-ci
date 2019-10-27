@@ -2,6 +2,22 @@
 
 set -e
 
+function help {
+    echo \
+"$(command -v gitlab-ci)
+
+    Usage: gitlab-ci [command]
+
+    Commands:
+        run [job]   Run
+        *           Help"
+}
+
+if [ -z "$1" ] || ! [ "$1" = 'run' ]; then
+    help
+    exit 0
+fi
+
 ################################################################################
 # Check if dependencies are installed
 ################################################################################
@@ -95,10 +111,21 @@ JOBS=($(yq r -j .gitlab-ci.yml \
 # If job name specified executes it, otherwise execute all jobs
 ################################################################################
 
-for JOB in "${JOBS[@]}"
-do
-    gitlab-runner exec docker $JOB \
-        --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
-        --env CI_COMMIT_SHA=$(git rev-parse HEAD) \
-        $PROJECT_VARIABLES
-done
+if [ -z "$2" ]; then
+    for JOB in "${JOBS[@]}"
+    do
+        gitlab-runner exec docker $JOB \
+            --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
+            --env CI_COMMIT_SHA=$(git rev-parse HEAD) \
+            $PROJECT_VARIABLES
+    done
+else
+    if [[ " ${JOBS[@]} " =~ " $2 " ]]; then
+        gitlab-runner exec docker $2 \
+            --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
+            --env CI_COMMIT_SHA=$(git rev-parse HEAD) \
+            $PROJECT_VARIABLES
+    else
+        echo "Job $2 does not exists!"
+    fi
+fi
